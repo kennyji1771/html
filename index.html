@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>🌐 ArquitecWeb · Estudio Profesional</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: #eef2f7; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif; padding: 12px; }
+        .app-card { max-width: 100%; background: white; border-radius: 32px; box-shadow: 0 20px 35px -10px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: #0b2b26; padding: 1rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 3px solid #f4c542; }
+        .header h1 { color: #f4f1de; font-size: 1.4rem; font-weight: 600; }
+        .header p { color: #b9d8d4; font-size: 0.7rem; }
+        .search-area { display: flex; gap: 8px; background: #1e3a38; padding: 4px 12px; border-radius: 60px; }
+        .search-area input { background: transparent; border: none; padding: 8px 0; color: white; font-size: 0.85rem; outline: none; width: 130px; }
+        .search-area input::placeholder { color: #cfe6e2; }
+        .search-area button { background: none; border: none; color: #f4c542; font-weight: bold; cursor: pointer; }
+        .btn-help { background: rgba(255,255,240,0.12); border: none; border-radius: 40px; padding: 6px 14px; color: white; font-size: 0.8rem; cursor: pointer; }
+        .tree-container { background: #fefcf5; padding: 1rem; overflow-x: auto; max-height: 60vh; font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace; font-size: clamp(0.7rem, 4vw, 0.85rem); line-height: 1.5; white-space: pre; }
+        .tree-container pre { margin: 0; font-family: inherit; white-space: pre; }
+        .node-link { color: #0f6b5e; text-decoration: none; font-weight: 600; background: #e6f4f1; padding: 2px 6px; border-radius: 24px; cursor: pointer; display: inline-block; margin: 1px 0; transition: 0.1s; }
+        .node-link:active { background: #f4c542; transform: scale(0.97); }
+        .fab { position: fixed; bottom: 20px; right: 20px; background: #f4c542; border: none; border-radius: 60px; padding: 12px 20px; font-weight: bold; box-shadow: 0 6px 14px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 8px; cursor: pointer; z-index: 99; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+        .modal-card { background: white; max-width: 500px; width: 90%; border-radius: 2rem; animation: fadeUp 0.2s; overflow: hidden; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-header { background: #0b2b26; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 1.2rem; }
+        .close-modal { background: none; border: none; font-size: 1.8rem; cursor: pointer; color: white; }
+        .modal-body { padding: 1.2rem; font-size: 0.9rem; line-height: 1.5; max-height: 55vh; overflow-y: auto; color: #1e2a2a; }
+        .modal-footer { padding: 0.8rem; display: flex; gap: 1rem; justify-content: flex-end; border-top: 1px solid #e2e8f0; }
+        .btn-study { background: #f4c542; border: none; padding: 0.5rem 1.2rem; border-radius: 40px; font-weight: bold; cursor: pointer; }
+        .btn-sec { background: #e2e8f0; border: none; padding: 0.5rem 1.2rem; border-radius: 40px; cursor: pointer; }
+        .checklist-item { display: flex; align-items: center; gap: 12px; margin: 12px 0; background: #f9f9f9; padding: 6px 12px; border-radius: 60px; }
+        .checklist-item input { width: 20px; height: 20px; accent-color: #0b2b26; }
+        .checklist-item label { flex: 1; font-size: 0.85rem; }
+        .checked-label { text-decoration: line-through; color: #8a9a96; }
+        .credit { text-align: center; font-size: 0.7rem; padding: 0.8rem; background: #fefcf5; color: #4b6b65; border-top: 1px solid #e2e8f0; }
+        hr { margin: 1rem 0; border-color: #e2e8f0; }
+    </style>
+</head>
+<body>
+<div class="app-card">
+    <div class="header">
+        <div><h1>🌿 ARQUITECTURA WEB</h1><p>Estudio interactivo · toca cualquier nodo</p></div>
+        <div style="display: flex; gap: 8px;">
+            <div class="search-area"><input type="text" id="searchInput" placeholder="Buscar..."><button id="searchBtn">🔍</button></div>
+            <button id="helpBtn" class="btn-help">❔</button>
+        </div>
+    </div>
+    <div class="tree-container"><pre id="treeRender"></pre></div>
+    <div class="credit">🧠 Hecho en Venezuela · Desarrollado por Gerard Sieveres | Modo estudio activo</div>
+</div>
+<div id="conceptModal" class="modal"><div class="modal-card"><div class="modal-header"><h3 id="modalTitle">📘 Concepto</h3><button class="close-modal" id="closeModalBtn">&times;</button></div><div class="modal-body" id="modalBody"></div><div class="modal-footer"><button id="modalMarkStudied" class="btn-study">✔️ Marcar estudiado</button><button id="modalCloseFooter" class="btn-sec">Cerrar</button></div></div></div>
+<div id="checklistModal" class="modal"><div class="modal-card"><div class="modal-header"><h3>📋 Mi progreso</h3><button class="close-modal" id="closeChecklistBtn">&times;</button></div><div class="modal-body" id="checklistModalBody"><div id="checklistContainer"></div><hr><button id="resetChecklistBtn" style="background:#dc2626; color:white; border:none; padding:10px; border-radius:60px; width:100%;">⟳ Reiniciar todo</button></div></div></div>
+<button class="fab" id="openChecklistBtn">📋 Progreso</button>
+
+<script>
+// --------------------------------------------------------------
+// ÁRBOL COMPLETO (original, con todos los nodos)
+// --------------------------------------------------------------
+const fullTree = `PROGRAMACIÓN WEB
+│
+├── HTML
+│   │
+│   ├── Lenguaje de marcado
+│   │   └── Estructura base
+│   │
+│   ├── <head>
+│   │   │
+│   │   ├── Cabecera, metadatos y recursos
+│   │   │
+│   │   ├── Parámetros y criterios:
+│   │   │   │
+│   │   │   ├── meta charset="UTF-8"
+│   │   │   │   └── codificación universal
+│   │   │   │
+│   │   │   ├── meta name="viewport"
+│   │   │   │   └── adaptación a dispositivos
+│   │   │   │
+│   │   │   ├── title
+│   │   │   │   └── título de pestaña
+│   │   │   │       ├── SEO
+│   │   │   │       └── usabilidad
+│   │   │   │
+│   │   │   ├── link rel="stylesheet"
+│   │   │   │   └── carga CSS externo
+│   │   │   │
+│   │   │   ├── style
+│   │   │   │   └── CSS interno
+│   │   │   │
+│   │   │   └── script (defer o async)
+│   │   │       └── JS que no bloquea
+│   │   │
+│   │   └── Criterios adicionales
+│   │       ├── SEO
+│   │       └── rendimiento
+│   │           └── evitar JS síncrono en head
+│   │
+│   ├── <body>
+│   │   │
+│   │   ├── Cuerpo y contenido visible
+│   │   │
+│   │   ├── Parámetros y criterios:
+│   │   │   │
+│   │   │   ├── Atributos globales
+│   │   │   │   ├── id
+│   │   │   │   ├── class
+│   │   │   │   ├── style
+│   │   │   │   ├── data-*
+│   │   │   │   └── title
+│   │   │   │
+│   │   │   ├── Eventos HTML
+│   │   │   │   ├── onclick
+│   │   │   │   ├── onload
+│   │   │   │   └── onchange
+│   │   │   │
+│   │   │   ├── Accesibilidad
+│   │   │   │   ├── aria-*
+│   │   │   │   ├── alt
+│   │   │   │   └── role
+│   │   │   │
+│   │   │   └── Semántica
+│   │   │       ├── <header>
+│   │   │       ├── <nav>
+│   │   │       ├── <main>
+│   │   │       ├── <section>
+│   │   │       ├── <article>
+│   │   │       └── <footer>
+│   │   │
+│   │   └── Buenas prácticas
+│   │       ├── estructura jerárquica
+│   │       ├── validación W3C
+│   │       └── diseño responsive
+│   │
+│   └── Scripts en HTML
+│       │
+│       ├── <script> en <head>
+│       │   └── solo con defer o async
+│       │
+│       └── <script> al final de <body>
+│           └── recomendado (mejora velocidad)
+│
+├── CSS
+│   │
+│   ├── Hojas de estilo (presentación visual)
+│   │
+│   ├── Tipos de aplicación
+│   │   ├── inline (atributo style) - mala práctica
+│   │   ├── interno (<style> en <head>)
+│   │   └── externo (archivo .css) - reutilizable
+│   │
+│   └── Parámetros y criterios
+│       ├── selectores
+│       ├── cascada
+│       ├── especificidad
+│       ├── media queries
+│       ├── flexbox
+│       └── grid
+│
+├── JAVASCRIPT
+│   │
+│   ├── Lenguaje de programación (interactividad + lógica)
+│   │
+│   ├── ¿Para qué sirve?
+│   │   ├── Manipular el DOM
+│   │   │   ├── cambiar contenido
+│   │   │   ├── cambiar estilos
+│   │   │   └── cambiar atributos
+│   │   ├── Responder a eventos (click, teclado, scroll)
+│   │   ├── Comunicación asíncrona (AJAX, Fetch)
+│   │   ├── Validar formularios (cliente)
+│   │   ├── Animaciones dinámicas
+│   │   ├── Almacenamiento local
+│   │   │   ├── localStorage
+│   │   │   └── sessionStorage
+│   │   └── Construcción de SPAs con frameworks
+│   │
+│   ├── Funcionamiento detallado
+│   │   ├── Motor: V8 (Chrome) / SpiderMonkey (Firefox)
+│   │   ├── Modelo un solo hilo + event loop
+│   │   │   ├── call stack
+│   │   │   ├── task queue / microtask queue
+│   │   │   └── Web APIs
+│   │   ├── Tipado dinámico, prototipos
+│   │   └── Asincronía: callbacks → promesas → async/await
+│   │
+│   ├── Dónde colocarlo en HTML
+│   │   ├── En <head> con defer o async
+│   │   ├── Al final del <body> (sin atributos)
+│   │   └── Archivo externo .js (limpio, cacheable)
+│   │
+│   ├── Parámetros y criterios del lenguaje
+│   │   ├── Variables: var, let, const
+│   │   ├── Tipos: string, number, boolean, object, array
+│   │   ├── Funciones: declaración, expresión, arrow
+│   │   ├── Estructuras: if, switch, for, while, try/catch
+│   │   ├── Eventos: addEventListener vs onclick
+│   │   ├── Manipulación DOM: getElementById, querySelector
+│   │   └── Buenas prácticas: modular, evitar globales
+│   │
+│   └── Vinculación con SQL (vía backend)
+│       ├── JS navegador NO accede directamente a BBDD
+│       ├── Se usa Node.js para conectar con SQL
+│       └── Parámetros de conexión (Node.js)
+│           ├── host (ej. localhost)
+│           ├── port (3306 MySQL / 5432 PostgreSQL)
+│           ├── user, password, database
+│           └── ssl (opcional)
+│
+├── BACKEND
+│   │
+│   ├── Lado servidor (procesamiento + datos)
+│   │
+│   ├── Lenguajes más utilizados
+│   │   ├── PHP (70%+ sitios, hosting tradicional)
+│   │   ├── Node.js (JS servidor, alto I/O)
+│   │   ├── Python (Django, Flask)
+│   │   ├── Java (Spring Boot)
+│   │   ├── C# (ASP.NET Core)
+│   │   ├── Ruby (Rails)
+│   │   └── Go (Gin, Echo)
+│   │
+│   ├── Pilas tecnológicas (stacks)
+│   │   ├── LAMP (Linux, Apache, MySQL, PHP)
+│   │   ├── WAMP (Windows, Apache, MySQL, PHP)
+│   │   ├── XAMPP (multiplataforma: Apache, MySQL, PHP, Perl)
+│   │   ├── LEMP (Linux, Nginx, MySQL, PHP)
+│   │   ├── MEAN (MongoDB, Express, Angular, Node.js)
+│   │   ├── MERN (MongoDB, Express, React, Node.js)
+│   │   └── PERN (PostgreSQL, Express, React, Node.js)
+│   │
+│   └── Conexión y consultas SQL
+│       │
+│       ├── MySQL
+│       │   ├── Parámetros adicionales: socket, connectTimeout, charset
+│       │   ├── Criterios: normalización, índices, evitar SELECT *
+│       │   └── Ejemplo: pool.query('SELECT...', [id])
+│       │
+│       ├── PostgreSQL
+│       │   ├── Parámetros adicionales: schema, application_name
+│       │   ├── Criterios: ACID, JSONB, arrays
+│       │   └── Ejemplo: client.query('INSERT...', [msg])
+│       │
+│       └── Lenguaje SQL
+│           ├── DDL: CREATE, ALTER, DROP
+│           ├── DML: SELECT, INSERT, UPDATE, DELETE
+│           ├── JOINs: INNER, LEFT, RIGHT
+│           ├── Clausulas: WHERE, GROUP BY, ORDER BY
+│           └── Buenas prácticas: consultas parametrizadas, transacciones
+│
+└── OTROS LENGUAJES Y TECNOLOGÍAS
+    │
+    ├── TypeScript (superset tipado de JS)
+    ├── JSON / XML (intercambio de datos)
+    ├── GraphQL (alternativa a REST)
+    ├── Frameworks frontend: React, Angular, Vue
+    └── Frameworks backend: Express, Laravel, Django, Spring Boot`;
+
+// --------------------------------------------------------------
+// DICCIONARIO COMPLETO (original + nuevas entradas)
+// --------------------------------------------------------------
+const explanations = {
+    // ========== NODOS PRINCIPALES ==========
+    "PROGRAMACIÓN WEB": "Conjunto de tecnologías (HTML, CSS, JS, backend, BBDD) para crear sitios y aplicaciones web accesibles desde navegador.",
+    "HTML": "HyperText Markup Language. Lenguaje de marcado que estructura el contenido mediante etiquetas. Define títulos, párrafos, imágenes, formularios.",
+    "Lenguaje de marcado": "Sistema de anotaciones que jerarquiza información. HTML usa etiquetas como <h1>, <p>, <div>.",
+    "Estructura base": "Documento HTML: <!DOCTYPE html>, <html>, <head>, <body>. Es el esqueleto de toda página.",
+    "<head>": "Contiene metadatos, título, enlaces a CSS/JS, configuraciones de SEO. No visible, pero crítico.",
+    "Cabecera, metadatos y recursos": "El <head> almacena información sobre la página (charset, viewport, descripción) y enlaza recursos externos (CSS, JS, fuentes).",
+    "Parámetros y criterios:": "Conjunto de configuraciones dentro del <head> que definen comportamiento, SEO y rendimiento.",
+    "meta charset=\"UTF-8\"": "Define codificación UTF-8 para mostrar cualquier símbolo (ñ, emojis). Obligatorio en HTML5.",
+    "codificación universal": "UTF-8 es el estándar que soporta todos los idiomas y caracteres especiales. Evita problemas de visualización.",
+    "meta name=\"viewport\"": "Controla la escala y dimensiones en móviles. Clave para diseño responsive.",
+    "adaptación a dispositivos": "Hace que el ancho de la página se ajuste al tamaño de la pantalla (width=device-width).",
+    "title": "Título que aparece en la pestaña del navegador. Fundamental para SEO y usabilidad.",
+    "título de pestaña": "Texto que identifica la página en el navegador y en los resultados de búsqueda.",
+    "SEO": "Search Engine Optimization. Técnicas para mejorar la posición en buscadores.",
+    "usabilidad": "Facilidad de uso de la web. Un buen título ayuda a los usuarios a saber dónde están.",
+    "link rel=\"stylesheet\"": "Enlaza un archivo CSS externo. Permite separar estilo de contenido, mejora mantenimiento y caché.",
+    "carga CSS externo": "El navegador descarga el archivo .css y aplica los estilos. Forma más eficiente.",
+    "style": "Etiqueta para escribir CSS interno directamente en el HTML. Útil para estilos críticos o páginas únicas.",
+    "CSS interno": "Estilos definidos dentro del mismo documento HTML. Menos reutilizable que archivos externos.",
+    "script (defer o async)": "Atributos para cargar JavaScript sin bloquear el renderizado. defer ejecuta tras parsear el HTML; async ejecuta mientras se descarga.",
+    "JS que no bloquea": "Mejora la velocidad de carga percibida. El navegador no detiene la construcción del DOM.",
+    "Criterios adicionales": "Buenas prácticas en <head>: incluir viewport, charset, título descriptivo, evitar scripts síncronos.",
+    "rendimiento": "Velocidad de carga y fluidez. Evitar JS síncrono en head reduce el tiempo hasta la interactividad.",
+    "evitar JS síncrono en head": "Los scripts sin defer/async detienen el parseo del HTML. Se colocan al final del <body> o con atributos.",
+    "<body>": "Contiene todo el contenido visible de la página: textos, imágenes, videos, formularios. Área principal para el usuario.",
+    "Cuerpo y contenido visible": "Sinónimo de <body>. Aquí se coloca la estructura visual y los elementos interactivos.",
+    "Atributos globales": "Atributos comunes a casi todas las etiquetas HTML: id, class, style, data-*, title.",
+    "id": "Identificador único para un elemento. Se usa en CSS (#id) y JavaScript (getElementById).",
+    "class": "Define una o más clases para aplicar estilos CSS o selección por JavaScript.",
+    "style": "Atributo para aplicar estilos CSS directamente al elemento. Mala práctica general (mezcla presentación con estructura).",
+    "data-*": "Atributo personalizado para almacenar datos privados en el HTML. Ej: data-usuario='123'.",
+    "title": "Atributo que muestra un tooltip al pasar el ratón. Útil para información adicional.",
+    "Eventos HTML": "Mecanismos que reaccionan a acciones del usuario: onclick, onload, onchange.",
+    "onclick": "Evento que se ejecuta al hacer clic sobre un elemento. Se puede usar con JavaScript o directamente en HTML.",
+    "onload": "Se dispara cuando la página o un recurso (imagen, iframe) ha terminado de cargar.",
+    "onchange": "Ocurre cuando el valor de un input, select o textarea cambia y pierde el foco.",
+    "Accesibilidad": "Prácticas para que personas con discapacidad puedan usar la web. Incluye aria-*, alt, role.",
+    "aria-*": "Atributos para mejorar la accesibilidad en componentes dinámicos (aria-label, aria-hidden, etc.).",
+    "alt": "Texto alternativo para imágenes. Lo leen los lectores de pantalla y se muestra si la imagen no carga.",
+    "role": "Define el propósito de un elemento (role='button', role='navigation'). Ayuda a tecnologías asistivas.",
+    "Semántica": "Uso de etiquetas con significado claro: header, nav, main, section, article, footer.",
+    "<header>": "Encabezado de una sección o de toda la página. Suele contener logotipo, título, navegación.",
+    "<nav>": "Bloque de enlaces de navegación principal del sitio.",
+    "<main>": "Contenido principal y único de la página. Debe haber solo uno por documento.",
+    "<section>": "Agrupa contenido temáticamente relacionado. Suele llevar un encabezado.",
+    "<article>": "Contenido independiente y reusable (post de blog, comentario, tarjeta de producto).",
+    "<footer>": "Pie de página o de sección. Contiene información de contacto, enlaces legales, copyright.",
+    "Buenas prácticas": "Recomendaciones para escribir HTML mantenible: estructura jerárquica, validación W3C, diseño responsive.",
+    "estructura jerárquica": "Anidar correctamente las etiquetas (padres e hijos). Indentación clara.",
+    "validación W3C": "Verificar que el HTML cumple los estándares del W3C usando el validador oficial. Evita errores de renderizado.",
+    "diseño responsive": "La web se adapta a diferentes tamaños de pantalla (móvil, tablet, escritorio). Uso de viewport, media queries, flexbox/grid.",
+    "Scripts en HTML": "Maneras de incluir código JavaScript en el documento. Puede ser interno o externo.",
+    "<script> en <head>": "Solo recomendado con atributos defer o async para no bloquear el renderizado inicial.",
+    "solo con defer o async": "Estos atributos permiten que el script se cargue sin detener el parseo del HTML.",
+    "<script> al final de <body>": "Práctica tradicional y segura: el DOM ya está construido cuando se ejecuta el script.",
+    "recomendado (mejora velocidad)": "Colocar scripts al final del body permite que el contenido visual se muestre antes.",
+    "CSS": "Cascading Style Sheets. Lenguaje que controla la presentación visual: colores, tipografías, disposición, responsive.",
+    "Hojas de estilo (presentación visual)": "Archivos .css que contienen reglas de estilo. Definen el aspecto estético.",
+    "Tipos de aplicación": "Formas de aplicar CSS: inline, interno (<style>), externo (archivo .css).",
+    "inline (atributo style) - mala práctica": "Aplicar estilos directamente en cada etiqueta. Dificulta mantenimiento.",
+    "interno (<style> en <head>)": "Estilos definidos dentro de <style> en el <head>. Útil para estilos críticos.",
+    "externo (archivo .css) - reutilizable": "Archivo separado. Se enlaza con <link>. Mejor práctica para proyectos grandes.",
+    "selectores": "Patrones para seleccionar elementos HTML: etiqueta (p), clase (.miClase), id (#miId).",
+    "cascada": "Mecanismo por el cual se aplican estilos según el orden de las reglas y la especificidad.",
+    "especificidad": "Peso de un selector: id > clase > etiqueta. Cuanto más específico, más prioridad.",
+    "media queries": "Reglas CSS que aplican estilos según características del dispositivo (ancho de pantalla, orientación).",
+    "flexbox": "Modelo de diseño unidimensional para alinear y distribuir espacios entre elementos en un contenedor.",
+    "grid": "Sistema de diseño bidimensional (filas y columnas). Muy potente para layouts complejos.",
+    "JAVASCRIPT": "Lenguaje de programación interpretado, multiparadigma. Añade interactividad, lógica asíncrona, manipulación del DOM.",
+    "Lenguaje de programación (interactividad + lógica)": "JavaScript permite ejecutar algoritmos, tomar decisiones y reaccionar a eventos.",
+    "Manipular el DOM": "Cambiar dinámicamente la estructura, contenido o estilos de la página.",
+    "cambiar contenido": "Modificar texto, HTML interno o atributos de elementos existentes.",
+    "cambiar estilos": "Añadir o quitar clases CSS, modificar estilos inline.",
+    "cambiar atributos": "Alterar src de una imagen, href de un enlace, etc.",
+    "Responder a eventos (click, teclado, scroll)": "Ejecutar código cuando ocurre una acción del usuario.",
+    "Comunicación asíncrona (AJAX, Fetch)": "Intercambiar datos con el servidor sin recargar la página.",
+    "Validar formularios (cliente)": "Comprobar que los datos ingresados por el usuario son correctos antes de enviarlos.",
+    "Animaciones dinámicas": "Movimientos, transiciones y efectos visuales controlados por JavaScript.",
+    "Almacenamiento local": "Guardar datos en el navegador del usuario. localStorage (persistente) y sessionStorage (por sesión).",
+    "localStorage": "Almacena pares clave-valor sin fecha de expiración. Los datos persisten al cerrar el navegador.",
+    "sessionStorage": "Similar a localStorage pero los datos se borran al cerrar la pestaña o el navegador.",
+    "Construcción de SPAs con frameworks": "Single Page Applications: aplicaciones que cargan una sola página HTML y actualizan dinámicamente el contenido sin recargar.",
+    "Motor: V8 (Chrome) / SpiderMonkey (Firefox)": "Intérpretes de JavaScript. V8 es de alto rendimiento, SpiderMonkey de Mozilla.",
+    "Modelo un solo hilo + event loop": "JavaScript ejecuta una tarea a la vez. El event loop gestiona operaciones asíncronas.",
+    "call stack": "Pila de llamadas: donde se apilan las funciones que se están ejecutando.",
+    "task queue / microtask queue": "Colas de tareas pendientes. Las microtareas (promesas) tienen prioridad.",
+    "Web APIs": "Funcionalidades del navegador (setTimeout, DOM events, fetch) que no son parte del núcleo de JS.",
+    "Tipado dinámico, prototipos": "Las variables pueden cambiar de tipo. La herencia se basa en prototipos.",
+    "Asincronía: callbacks → promesas → async/await": "Evolución del manejo de código asíncrono para evitar el infierno de callbacks.",
+    "En <head> con defer o async": "Colocar scripts en <head> con estos atributos para no bloquear el renderizado.",
+    "Al final del <body> (sin atributos)": "Lugar tradicional para scripts que no necesitan cargarse antes.",
+    "Archivo externo .js (limpio, cacheable)": "Separar el código JavaScript en archivos .js mejora organización y caché.",
+    "Variables: var, let, const": "Formas de declarar variables. var es obsoleto, let y const son modernos.",
+    "Tipos: string, number, boolean, object, array": "Tipos de datos básicos de JavaScript.",
+    "Funciones: declaración, expresión, arrow": "Diferentes sintaxis para definir funciones reutilizables.",
+    "Estructuras: if, switch, for, while, try/catch": "Estructuras de control de flujo y manejo de errores.",
+    "Eventos: addEventListener vs onclick": "addEventListener permite múltiples manejadores; onclick solo uno.",
+    "Manipulación DOM: getElementById, querySelector": "Métodos para seleccionar elementos del DOM.",
+    "Buenas prácticas: modular, evitar globales": "Escribir código limpio y mantenible.",
+    "JS navegador NO accede directamente a BBDD": "Por seguridad, el frontend no puede conectarse directamente a la base de datos.",
+    "Se usa Node.js para conectar con SQL": "JavaScript del lado del servidor que sí puede acceder a BBDD.",
+    "Parámetros de conexión (Node.js)": "Configuración para conectar a MySQL o PostgreSQL: host, port, user, password, database, ssl.",
+    "host (ej. localhost)": "Dirección del servidor de base de datos.",
+    "port (3306 MySQL / 5432 PostgreSQL)": "Puerto de escucha estándar de cada motor.",
+    "user, password, database": "Credenciales y nombre de la base de datos.",
+    "ssl (opcional)": "Conexión cifrada, recomendada en producción.",
+    "BACKEND": "Lado servidor: procesa peticiones, lógica de negocio, acceso a BBDD.",
+    "Lado servidor (procesamiento + datos)": "Código que se ejecuta en un servidor remoto o local, no en el navegador.",
+    "PHP (70%+ sitios, hosting tradicional)": "Lenguaje interpretado especializado en web. Muy usado en hosting compartido.",
+    "Node.js (JS servidor, alto I/O)": "Entorno JavaScript basado en V8, ideal para APIs y tiempo real.",
+    "Python (Django, Flask)": "Lenguaje versátil. Django es framework completo, Flask es minimalista.",
+    "Java (Spring Boot)": "Lenguaje robusto y tipado. Spring Boot es líder en microservicios empresariales.",
+    "C# (ASP.NET Core)": "Lenguaje de Microsoft, multiplataforma y de alto rendimiento.",
+    "Ruby (Rails)": "Lenguaje dinámico con framework Rails que acelera el desarrollo.",
+    "Go (Gin, Echo)": "Lenguaje compilado con concurrencia nativa, ideal para microservicios.",
+    "MySQL": "Sistema de gestión de bases de datos relacional open source. Rápido y popular en LAMP.",
+    "Parámetros adicionales: socket, connectTimeout, charset": "Configuraciones específicas de conexión a MySQL.",
+    "socket": "Archivo de socket Unix para conexiones locales más rápidas.",
+    "connectTimeout": "Tiempo máximo de espera para establecer la conexión inicial.",
+    "charset": "Conjunto de caracteres (utf8mb4 recomendado).",
+    "Criterios: normalización, índices, evitar SELECT *": "Buenas prácticas en diseño de consultas MySQL.",
+    "normalización": "Diseño de tablas para reducir duplicación de datos.",
+    "índices": "Estructuras que mejoran la velocidad de búsqueda por columnas específicas.",
+    "evitar SELECT *": "Solicitar solo las columnas necesarias para reducir tráfico y carga.",
+    "PostgreSQL": "RDBMS avanzado, open source, con cumplimiento ACID, JSONB, arrays y extensiones.",
+    "Parámetros adicionales: schema, application_name": "Configuraciones específicas de PostgreSQL.",
+    "schema": "Organización lógica de tablas dentro de una base de datos.",
+    "application_name": "Cadena que identifica la aplicación en los logs del servidor.",
+    "Criterios: ACID, JSONB, arrays": "Características avanzadas de PostgreSQL.",
+    "ACID": "Atomicidad, Consistencia, Aislamiento, Durabilidad. Garantiza transacciones confiables.",
+    "JSONB": "Almacena JSON en formato binario, permite indexación y consultas eficientes.",
+    "arrays": "Campos que contienen listas de valores.",
+    "Lenguaje SQL": "Structured Query Language. Declarativo para definir y manipular datos relacionales.",
+    "DDL: CREATE, ALTER, DROP": "Data Definition Language: crear, modificar o eliminar estructuras.",
+    "DML: SELECT, INSERT, UPDATE, DELETE": "Data Manipulation Language: consultar, insertar, actualizar o borrar datos.",
+    "JOINs: INNER, LEFT, RIGHT": "Combinan filas de dos o más tablas según una condición.",
+    "Clausulas: WHERE, GROUP BY, ORDER BY": "Filtran, agrupan u ordenan resultados de consultas.",
+    "Buenas prácticas: consultas parametrizadas, transacciones": "Previenen inyección SQL y aseguran atomicidad.",
+    "OTROS LENGUAJES Y TECNOLOGÍAS": "Complementos del ecosistema web moderno.",
+    "TypeScript (superset tipado de JS)": "Añade tipos estáticos a JavaScript. Compila a JS y mejora mantenimiento.",
+    "JSON / XML (intercambio de datos)": "Formatos para enviar información entre cliente y servidor. JSON es el más usado.",
+    "GraphQL (alternativa a REST)": "Lenguaje de consulta que permite pedir exactamente los datos necesarios.",
+    "Frameworks frontend: React, Angular, Vue": "Bibliotecas y frameworks para construir interfaces de usuario complejas.",
+    "React": "Librería creada por Facebook. Usa componentes y Virtual DOM. Muy popular.",
+    "Angular": "Framework completo de Google con TypeScript, inyección de dependencias, CLI potente.",
+    "Vue": "Framework progresivo, fácil de aprender. Combina lo mejor de React y Angular.",
+    "Frameworks backend: Express, Laravel, Django, Spring Boot": "Frameworks que agilizan el desarrollo del servidor.",
+    "Express": "Minimalista y flexible. El más usado con Node.js para APIs REST.",
+    "Laravel": "Framework elegante para PHP con ORM, Blade templates, artisan CLI.",
+    "Django": "Framework de Python con alta productividad, incluye ORM y admin automático.",
+    "Spring Boot": "Framework para Java con configuración automática, ideal para microservicios.",
+
+    // ========== NUEVAS ENTRADAS: PILAS TECNOLÓGICAS ==========
+    "LAMP (Linux, Apache, MySQL, PHP)": "LAMP es un stack de tecnologías de código abierto: Linux (SO), Apache (servidor web), MySQL (base de datos) y PHP (lenguaje). Es la base de millones de sitios web, ideal para aplicaciones dinámicas y de alto tráfico. Ventajas: gratuito, gran comunidad, probado, flexible.",
+    "LAMP": "LAMP: Linux, Apache, MySQL, PHP. Pila clásica para desarrollo web. Permite construir desde sitios estáticos hasta complejos sistemas de comercio electrónico. Es mantenida por la comunidad open source y tiene enorme soporte.",
+    "Pila LAMP": "Sinónimo de LAMP. Conjunto de cuatro tecnologías que trabajan juntas: Linux (base), Apache (servidor HTTP), MySQL (base de datos), PHP (procesamiento dinámico). Es una arquitectura cliente-servidor muy extendida.",
+    "Arquitectura LAMP": "Describe cómo interactúan las cuatro capas. Apache recibe peticiones, PHP ejecuta la lógica, MySQL almacena/recupera datos, y Linux proporciona el entorno. Es robusta, escalable y bien documentada.",
+    "¿Qué es una pila LAMP?": "Una pila LAMP es un conjunto de cuatro tecnologías de software (Linux, Apache, MySQL, PHP) que los desarrolladores utilizan para crear sitios web y aplicaciones web. Son de código abierto, gratuitas, mantenidas por la comunidad. Permiten construir tanto páginas estáticas como dinámicas, manejando lógica de negocio y bases de datos. Es una solución madura que impulsa millones de sitios en internet.",
+    "Importancia de LAMP": "Su importancia radica en: Costo (gratuito), Eficiencia (solución probada), Mantenimiento (actualizaciones comunitarias), Soporte (gran comunidad global), Flexibilidad (se pueden sustituir componentes, ej. usar PostgreSQL en lugar de MySQL). Es ideal para sitios de alto tráfico, comercio electrónico y aplicaciones complejas.",
+    "¿Cómo funciona una pila LAMP?": "1) El navegador solicita una página web. 2) Apache recibe la petición; si es un archivo estático (HTML/CSS) lo sirve directamente. 3) Si es dinámica (PHP), Apache pasa la solicitud al intérprete PHP. 4) PHP ejecuta el código, que puede incluir consultas a MySQL. 5) MySQL devuelve los datos. 6) PHP genera el HTML resultante y Apache lo envía al navegador.",
+    "Alternativas LAMP": "Otras pilas que sustituyen algún componente: WAMP (Windows en lugar de Linux), XAMPP (multiplataforma, incluye Perl), LEMP (Nginx en lugar de Apache), MEAN (MongoDB, Express, Angular, Node.js – todo JavaScript), MERN (React en lugar de Angular), PERN (PostgreSQL en lugar de MongoDB). También se puede reemplazar PHP por Python o Perl.",
+    "Pila MEAN": "MEAN es un stack moderno basado completamente en JavaScript: MongoDB (base de datos NoSQL), Express.js (framework backend), Angular (frontend), Node.js (entorno servidor). Ideal para aplicaciones en tiempo real y SPA. A diferencia de LAMP, usa un solo lenguaje (JS) tanto en cliente como servidor, lo que agiliza el desarrollo.",
+    "MEAN vs LAMP": "LAMP es más tradicional, adecuado para sitios con alto tráfico y lógica compleja en backend (ej. comercio electrónico). MEAN es mejor para aplicaciones que requieren mucha interacción en tiempo real, como chats o dashboards, y equipos que dominan JavaScript. LAMP usa bases de datos relacionales (SQL); MEAN usa MongoDB (documentos JSON).",
+    "XAMPP": "XAMPP es un paquete que instala localmente un entorno LAMP de forma rápida y multiplataforma (Windows, Linux, macOS). Incluye Apache, MySQL/MariaDB, PHP y Perl. Es muy usado para desarrollo y pruebas locales, ya que evita configurar cada componente por separado.",
+    "WAMP": "WAMP es la versión para Windows de LAMP (Windows, Apache, MySQL, PHP). Similar a XAMPP pero exclusivo para Windows.",
+    "LEMP": "LEMP sustituye Apache por Nginx (pronunciado 'engine x', de ahí la 'E'). Nginx es más eficiente en servir contenido estático y manejar muchas conexiones simultáneas, por lo que LEMP es popular en sitios de alto rendimiento.",
+    "MERN": "MERN es igual que MEAN pero usando React.js como framework frontend en lugar de Angular. También es full JavaScript.",
+    "PERN": "PERN usa PostgreSQL (base de datos relacional), Express, React y Node.js. Combina la potencia de una BBDD relacional con el stack JS moderno.",
+    "LAMP stack": "Sinónimo de pila LAMP.",
+    "¿Para qué se usa LAMP?": "Se usa para desarrollo backend: aplicaciones web dinámicas, APIs, sistemas de gestión de contenido (CMS), comercio electrónico, portales empresariales, etc. Procesa datos, autenticación, lógica de negocio y comunicación con bases de datos.",
+    "Componentes LAMP": "Linux (SO), Apache (servidor web), MySQL (base de datos), PHP (lenguaje de scripting). Cada uno es reemplazable por alternativas similares.",
+    "Costo LAMP": "Todas las tecnologías LAMP son de código abierto, sin tarifas de licencia, lo que reduce drásticamente el costo de desarrollo y operación.",
+    "Eficiencia LAMP": "Es una solución probada durante décadas, con abundante documentación y ejemplos. Los desarrolladores pueden centrarse en la lógica de negocio en lugar de reinventar la infraestructura.",
+    "Mantenimiento LAMP": "La comunidad de código abierto mantiene y actualiza constantemente cada componente, corrigiendo errores y vulnerabilidades de seguridad.",
+    "Soporte LAMP": "Existe una enorme comunidad global de desarrolladores, foros, tutoriales y ejemplos. Es fácil encontrar ayuda y profesionales familiarizados con LAMP.",
+    "Flexibilidad LAMP": "Se pueden sustituir componentes: usar PostgreSQL en lugar de MySQL, o Python en lugar de PHP, o Nginx en lugar de Apache, manteniendo la estructura general.",
+    "Páginas estáticas vs dinámicas en LAMP": "Las páginas estáticas (HTML, CSS) se sirven directamente por Apache. Las dinámicas (PHP) se procesan en el servidor, pudiendo consultar la base de datos y generar HTML personalizado para cada usuario."
+};
+
+function getExplanation(node) {
+    let clean = node.trim();
+    if (explanations[clean]) return explanations[clean];
+    // Búsqueda por coincidencia parcial (ignorando mayúsculas)
+    const lower = clean.toLowerCase();
+    for (let key in explanations) {
+        if (lower.includes(key.toLowerCase()) || key.toLowerCase().includes(lower)) {
+            return explanations[key];
+        }
+    }
+    return `📘 "${node}" es un componente técnico dentro de la arquitectura web. Si deseas agregar su definición, puedes sugerirla para futuras versiones.`;
+}
+
+// --------------------------------------------------------------
+// RENDER DEL ÁRBOL (con enlaces clickeables)
+// --------------------------------------------------------------
+function renderTree() {
+    const container = document.getElementById('treeRender');
+    container.innerHTML = '';
+    const lines = fullTree.split('\n');
+    for (let line of lines) {
+        const match = line.match(/^([│├└─\s]*)(.*)$/);
+        const prefix = match[1];
+        const nodeText = match[2].trim();
+        if (!nodeText || line.match(/^[│├└─\s]+$/)) {
+            container.appendChild(document.createTextNode(line + '\n'));
+            continue;
+        }
+        const span = document.createElement('span');
+        span.style.display = 'block';
+        span.style.whiteSpace = 'pre';
+        const prefixSpan = document.createElement('span');
+        prefixSpan.textContent = prefix;
+        const link = document.createElement('a');
+        link.className = 'node-link';
+        link.textContent = nodeText;
+        link.href = '#';
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            showExplanationModal(nodeText);
+        });
+        span.appendChild(prefixSpan);
+        span.appendChild(link);
+        container.appendChild(span);
+        container.appendChild(document.createTextNode('\n'));
+    }
+}
+
+// --------------------------------------------------------------
+// MODAL DE EXPLICACIÓN Y CHECKLIST
+// --------------------------------------------------------------
+let currentConcept = "";
+const modal = document.getElementById('conceptModal');
+const modalTitle = document.getElementById('modalTitle');
+const modalBody = document.getElementById('modalBody');
+function showExplanationModal(concept) {
+    currentConcept = concept;
+    modalTitle.innerText = `📘 ${concept}`;
+    modalBody.innerText = getExplanation(concept);
+    modal.style.display = 'flex';
+}
+function closeModal() { modal.style.display = 'none'; }
+
+// Checklist (incluye los nuevos conceptos)
+const conceptosClave = [
+    "HTML", "<head>", "<body>", "meta charset", "meta viewport", "title", "CSS", "JAVASCRIPT",
+    "BACKEND", "SQL", "MySQL", "PostgreSQL", "Node.js", "TypeScript", "React", "PHP", "SPAs", "Event Loop",
+    "LAMP", "MEAN", "XAMPP", "MERN", "LEMP", "PERN", "WAMP"
+];
+let checklist = {};
+function loadChecklist() {
+    const stored = localStorage.getItem("webCompletaChecklist");
+    if (stored) checklist = JSON.parse(stored);
+    else conceptosClave.forEach(c => checklist[c] = false);
+}
+function saveChecklist() { localStorage.setItem("webCompletaChecklist", JSON.stringify(checklist)); }
+function renderChecklist() {
+    const container = document.getElementById('checklistContainer');
+    if (!container) return;
+    container.innerHTML = "";
+    for (let c of conceptosClave) {
+        const div = document.createElement('div');
+        div.className = 'checklist-item';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = checklist[c] || false;
+        cb.addEventListener('change', (e) => {
+            checklist[c] = e.target.checked;
+            saveChecklist();
+            renderChecklist();
+        });
+        const label = document.createElement('label');
+        label.textContent = c;
+        if (checklist[c]) label.classList.add('checked-label');
+        div.appendChild(cb);
+        div.appendChild(label);
+        container.appendChild(div);
+    }
+}
+function markCurrentAsStudied() {
+    let found = conceptosClave.find(c => currentConcept.includes(c) || c.includes(currentConcept));
+    if (found) {
+        checklist[found] = true;
+        saveChecklist();
+        renderChecklist();
+        modalBody.innerHTML += `<br><span style="color:#0b6b5e;">✅ Marcado "${found}" como estudiado</span>`;
+        setTimeout(() => { modalBody.innerText = getExplanation(currentConcept); }, 1500);
+    } else {
+        alert(`"${currentConcept}" no está en el checklist, pero puedes estudiarlo igual.`);
+    }
+}
+
+// --------------------------------------------------------------
+// EVENTOS GLOBALES
+// --------------------------------------------------------------
+const checklistModal = document.getElementById('checklistModal');
+function openChecklistModal() { renderChecklist(); checklistModal.style.display = 'flex'; }
+function closeChecklistModal() { checklistModal.style.display = 'none'; }
+
+function searchNode() {
+    const query = document.getElementById('searchInput').value.trim().toLowerCase();
+    if (!query) return;
+    const links = document.querySelectorAll('.node-link');
+    for (let link of links) {
+        if (link.textContent.toLowerCase().includes(query)) {
+            link.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            link.style.backgroundColor = '#f4c542';
+            setTimeout(() => link.style.backgroundColor = '', 1500);
+            showExplanationModal(link.textContent);
+            return;
+        }
+    }
+    // Búsqueda en diccionario si no se encuentra en el árbol
+    if (explanations[query] || Object.keys(explanations).some(k => k.toLowerCase().includes(query))) {
+        showExplanationModal(query);
+    } else {
+        alert("Nodo no encontrado. Prueba: LAMP, HTML, CSS, JavaScript, etc.");
+    }
+}
+
+window.onload = () => {
+    renderTree();
+    loadChecklist();
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+        if (e.target === checklistModal) closeChecklistModal();
+    });
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('modalCloseFooter').addEventListener('click', closeModal);
+    document.getElementById('modalMarkStudied').addEventListener('click', markCurrentAsStudied);
+    document.getElementById('openChecklistBtn').addEventListener('click', openChecklistModal);
+    document.getElementById('closeChecklistBtn').addEventListener('click', closeChecklistModal);
+    document.getElementById('resetChecklistBtn').addEventListener('click', () => {
+        if (confirm("¿Reiniciar todo el progreso?")) {
+            conceptosClave.forEach(c => checklist[c] = false);
+            saveChecklist();
+            renderChecklist();
+        }
+    });
+    document.getElementById('searchBtn').addEventListener('click', searchNode);
+    document.getElementById('searchInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') searchNode(); });
+    document.getElementById('helpBtn').addEventListener('click', () => {
+        alert("📘 Cómo usar:\n• Toca cualquier texto verde del árbol → tarjeta con definición.\n• Botón 'Progreso' → checklist de conceptos.\n• Busca palabras clave (ej. LAMP, HTML, Event Loop).\n• Marca 'estudiado' dentro de la tarjeta para guardar avance.");
+    });
+};
+</script>
+</body>
+</html>
